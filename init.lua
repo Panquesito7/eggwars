@@ -232,17 +232,28 @@ local function gen_match_hud(key)
 	end
 end
 
+--- Remove player hud match elements
+-- @param name - players name string
+-- @param key - match key string
+-- @return nothing
+local function remove_player_hud(name)
+	local obj = minetest.get_player_by_name(name)
+	if not obj then return end
+	local key = eggwars.player[name]
+	local def = eggwars.match[key].player
+	for _, v in ipairs(def.hud_id) do
+		obj:hud_remove(v)
+	end
+	obj:hud_remove(def.remaining)
+	obj:hud_remove(def.pil)
+end
+
 --- Remove match status flags from players HUD
 -- @param key - arena key string
 -- @return nothing
 local function remove_match_hud(key)
 	for k, def in pairs(eggwars.match[key].player) do
-		local obj = minetest.get_player_by_name(k)
-		for _, v in ipairs(def.hud_id) do
-			obj:hud_remove(v)
-		end
-		obj:hud_remove(def.remaining)
-		obj:hud_remove(def.pil)
+		remove_player_hud(name)
 	end
 end
 
@@ -435,6 +446,9 @@ local function safe_spawn(minp)
 	return minp -- failed search
 end
 
+--- Removes a player from a match
+-- @param name - player name strings
+-- @return nothing
 local function remove_match_player(name)
 	if eggwars.player[name] then
 		local key, match, player, count
@@ -444,10 +458,12 @@ local function remove_match_player(name)
 		if player.egg then
 			minetest.remove_node(player.eggpos)
 		end
+		remove_player_hud(name)
 		count = match.alive - 1
-		eggwars.match[key].alive = count
-		eggwars.match[key].player[name].alive = false
-		eggwars.match[key].player[name].egg = false
+		match.alive = count
+		match.player[name].alive = false
+		match.player[name].egg = false
+		eggwars.match[key] = match
 		eggwars.player[name] = nil
 		if match.alive == 1 then
 			eggwars.end_match(key)
